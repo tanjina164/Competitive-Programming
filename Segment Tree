@@ -1,0 +1,135 @@
+#include <bits/stdc++.h>
+using namespace std ;
+#define TJ ios::sync_with_stdio(false);cin.tie(0);
+#define ll long long
+#define fr(i,a,b) for(ll i=a; i<b; i++)
+#define nl endl
+#define INFX LLONG_MAX
+#define Tc ll t; cin>>t; while(t--)
+
+#define sz 505
+ll arr[sz][sz];
+ll tree[sz*4][sz*4];
+ll n, m;
+
+// ---------- inner tree (column) ----------
+// nx = outer node, bx..ex = outer range
+void initY(ll nx, ll bx, ll ex, ll node, ll b, ll e)
+{
+    if(b==e)
+    {
+        if(bx==ex)
+            tree[nx][node] = arr[bx][b];
+        else
+            // change
+            tree[nx][node] = min(tree[nx*2][node], tree[nx*2+1][node]);
+        return;
+    }
+    ll left = node*2;
+    ll right = node*2 + 1;
+    ll mid = (b+e)/2;
+    initY(nx, bx, ex, left, b, mid);
+    initY(nx, bx, ex, right, mid+1, e);
+    // change
+    tree[nx][node] = min(tree[nx][left], tree[nx][right]);
+}
+
+// ---------- outer tree (row) ----------
+void init(ll node, ll b, ll e)
+{
+    if(b!=e)
+    {
+        ll left = node*2;
+        ll right = node*2 + 1;
+        ll mid = (b+e)/2;
+        init(left, b, mid);
+        init(right, mid+1, e);
+    }
+    initY(node, b, e, 1, 1, m);
+}
+
+ll queryY(ll nx, ll node, ll b, ll e, ll j1, ll j2)
+{
+    if(j1>e || j2<b)
+        // return 0;
+        return INFX;
+    if(b>=j1 && e<=j2)
+        return tree[nx][node];
+    ll left = node*2;
+    ll right = node*2 + 1;
+    ll mid = (b+e)/2;
+    ll p1 = queryY(nx, left, b, mid, j1, j2);
+    ll p2 = queryY(nx, right, mid+1, e, j1, j2);
+    return min(p1, p2);
+}
+
+ll query(ll node, ll b, ll e, ll i1, ll i2, ll j1, ll j2)
+{
+    if(i1>e || i2<b)
+        // return 0;
+        return INFX;
+    if(b>=i1 && e<=i2)
+        return queryY(node, 1, 1, m, j1, j2);
+    ll left = node*2;
+    ll right = node*2 + 1;
+    ll mid = (b+e)/2;
+    ll p1 = query(left, b, mid, i1, i2, j1, j2);
+    ll p2 = query(right, mid+1, e, i1, i2, j1, j2);
+    return min(p1, p2);
+}
+
+void updateY(ll nx, ll bx, ll ex, ll node, ll b, ll e, ll j, ll newvalue)
+{
+    if(j>e || j<b)
+        return;
+    if(b==e)
+    {
+        if(bx==ex)
+            tree[nx][node] = newvalue;
+        else
+            //changes
+            tree[nx][node] = min(tree[nx*2][node], tree[nx*2+1][node]);
+        return;
+    }
+    ll left = node*2;
+    ll right = node*2 + 1;
+    ll mid = (b+e)/2;
+    updateY(nx, bx, ex, left, b, mid, j, newvalue);
+    updateY(nx, bx, ex, right, mid+1, e, j, newvalue);
+    //changes
+    tree[nx][node] = min(tree[nx][left], tree[nx][right]);
+}
+
+void update(ll node, ll b, ll e, ll i, ll j, ll newvalue)
+{
+    if(i>e || i<b)
+        return;
+    if(b!=e)
+    {
+        ll left = node*2;
+        ll right = node*2 + 1;
+        ll mid = (b+e)/2;
+        update(left, b, mid, i, j, newvalue);
+        update(right, mid+1, e, i, j, newvalue);
+    }
+    updateY(node, b, e, 1, 1, m, j, newvalue);
+}
+
+int main()
+{
+    TJ
+    Tc
+    {
+        cin>>n>>m;
+        fr(i,1,n+1) fr(j,1,m+1) cin>>arr[i][j];
+        init(1,1,n);
+
+        // query: rows i1..i2, cols j1..j2
+        ll i1,i2,j1,j2; cin>>i1>>i2>>j1>>j2;
+        cout<<query(1,1,n,i1,i2,j1,j2)<<nl;
+
+        // update: arr[i][j] = v
+        // update(1,1,n,i,j,v);
+    }
+    return 0;
+}
